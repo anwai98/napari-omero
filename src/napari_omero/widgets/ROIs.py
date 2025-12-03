@@ -94,15 +94,19 @@ def omero_roi_manager() -> Container:
         layer_name = image_layer.name
         img_id = int(layer_name.split(":")[0])
 
+        # Get the "true" image dimensions.
+        image_ndim = len(image_layer.data.squeeze().shape)
+
         # Let's time how long it takes to do all the fetching
         import time
         start = time.time()
-        from biohack_utils.util import fetch_omero_labels_in_napari
-        labels = fetch_omero_labels_in_napari(gateway.conn, img_id)
+        from biohack_utils.omero_annotation import fetch_omero_labels_in_napari
+        labels = fetch_omero_labels_in_napari(gateway.conn, img_id, is_3d=(image_ndim == 3))
         end = time.time()
-        print(f"It took ca. {end - start}s to fetch the mask labels.")
+        print(f"It took ca. {round(end - start)}s to fetch the mask labels.")
 
-        viewer.add_labels(labels)
+        for _k, _v in labels.items():
+            viewer.add_labels(_v, name=_k)
 
     container = Container(widgets=[omero_image_combobox, load_button, save_button, collection_button])
     return container
