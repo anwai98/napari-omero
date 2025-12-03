@@ -21,8 +21,8 @@ def omero_roi_manager() -> Container:
     omero_image_combobox = create_widget(label="OMERO Image", annotation=Image)
     load_button = PushButton(text="Load Annotations from OMERO")
     save_button = PushButton(text="Upload Annotations to OMERO")
-    collection_mbutton = PushButton(text="Fetch Masks from OMERO Image Collection")
-    collection_ibutton = PushButton(text="Fetch Images from OMERO Image Collection")
+    collection_mbutton = PushButton(text="Fetch Masks from OMERO Collection")
+    collection_ibutton = PushButton(text="Fetch Images from OMERO Collection")
 
     @load_button.clicked.connect
     def _load_rois_from_omero() -> None:
