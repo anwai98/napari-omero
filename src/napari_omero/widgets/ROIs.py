@@ -91,9 +91,6 @@ def omero_roi_manager() -> Container:
         layer_name = image_layer.name
         img_id = int(layer_name.split(":")[0])
 
-        # Get the "true" image dimensions.
-        image_ndim = len(image_layer.data.squeeze().shape)
-
         # Let's time how long it takes to do all the fetching
         import time
         start = time.time()
@@ -101,10 +98,10 @@ def omero_roi_manager() -> Container:
 
         if stype == "images":
             more_images = fetch_omero_labels_in_napari(
-                gateway.conn, img_id, is_3d=(image_ndim == 3), label_node_type="Intensities"
+                gateway.conn, img_id, label_node_type="Intensities"
             )
         elif stype == "labels":
-            more_images = fetch_omero_labels_in_napari(gateway.conn, img_id, is_3d=(image_ndim == 3))
+            more_images = fetch_omero_labels_in_napari(gateway.conn, img_id)
         else:
             raise NotImplementedError
 
