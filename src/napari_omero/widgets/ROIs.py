@@ -21,7 +21,8 @@ def omero_roi_manager() -> Container:
     omero_image_combobox = create_widget(label="OMERO Image", annotation=Image)
     load_button = PushButton(text="Load Annotations from OMERO")
     save_button = PushButton(text="Upload Annotations to OMERO")
-    collection_button = PushButton(text="Fetch Mask Labels from OMERO Image Collection")
+    collection_mbutton = PushButton(text="Fetch Masks from OMERO Image Collection")
+    collection_ibutton = PushButton(text="Fetch Images from OMERO Image Collection")
 
     @load_button.clicked.connect
     def _load_rois_from_omero() -> None:
@@ -79,11 +80,7 @@ def omero_roi_manager() -> Container:
         trg = image_wrapper.getName()
         show_info(f"All annotation layers uploaded to OMERO image id {image_id}: {trg}")
 
-    @collection_button.clicked.connect
-    def _fetch_mask_labels_from_collection() -> None:
-        """Fetches the mask from a collection.
-        """
-        viewer = napari.viewer.current_viewer()
+    def _fetch_stuff_from_collection(stype):
         image_layer = omero_image_combobox.value
 
         if not image_layer or "omero" not in image_layer.metadata:
@@ -101,12 +98,45 @@ def omero_roi_manager() -> Container:
         import time
         start = time.time()
         from biohack_utils.omero_annotation import fetch_omero_labels_in_napari
-        labels = fetch_omero_labels_in_napari(gateway.conn, img_id, is_3d=(image_ndim == 3))
+
+        if stype == "images":
+            more_images = fetch_omero_labels_in_napari(
+                gateway.conn, img_id, is_3d=(image_ndim == 3), label_node_type="Intensities"
+            )
+        elif stype == "labels":
+            more_images = fetch_omero_labels_in_napari(gateway.conn, img_id, is_3d=(image_ndim == 3))
+        else:
+            raise NotImplementedError
+
         end = time.time()
         print(f"It took ca. {round(end - start)}s to fetch the mask labels.")
 
+        return more_images
+
+    @collection_mbutton.clicked.connect
+    def _fetch_mask_labels_from_collection() -> None:
+        """Fetches the mask from a collection.
+        """
+        viewer = napari.viewer.current_viewer()
+        labels = _fetch_stuff_from_collection("labels")
         for _k, _v in labels.items():
             viewer.add_labels(_v, name=_k)
 
-    container = Container(widgets=[omero_image_combobox, load_button, save_button, collection_button])
+    @collection_ibutton.clicked.connect
+    def _fetch_additional_images_from_collection() -> None:
+        """Fetches additional images from the same collection.
+        """
+        viewer = napari.viewer.current_viewer()
+        more_images = _fetch_stuff_from_collection("images")
+
+        if not more_images:
+            print("Oopsie, ich bin kaputt. No additional images found in the collection.")
+            return
+
+        for _k, _v in more_images.items():
+            viewer.add_image(_v, name=_k)
+
+    container = Container(
+        widgets=[omero_image_combobox, load_button, save_button, collection_mbutton, collection_ibutton]
+    )
     return container
